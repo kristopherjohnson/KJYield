@@ -4,7 +4,7 @@ KJYield
 This Swift library provides "yield" functionality intended to be similar to that provided by Python's [generators](http://legacy.python.org/dev/peps/pep-0255/) and [generator expressions](http://legacy.python.org/dev/peps/pep-0289/) or F#'s [sequence expressions](http://msdn.microsoft.com/en-us/library/dd233209.aspx).
 
 
-For example, you can generate an array with the values [3, 6, 9, 12, 15, 18] like this:
+For example, you can generate an array with the values `[3, 6, 9, 12, 15, 18]` like this:
 
     let array = Array<Int>(sequence { yield in
         for n in 1...6 { yield(n * 3) }
