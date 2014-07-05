@@ -6,32 +6,32 @@ This Swift library provides "yield" functionality intended to be similar to that
 
 For example, you can generate an array with the values `[3, 6, 9, 12, ..., 27, 30]` like this:
 
-    ```swift
-    let array = Array<Int>(sequence { yield in
-        for n in 1...10 { yield(n * 3) }
-    })
-    ```
+```swift
+let array = Array<Int>(sequence { yield in
+    for n in 1...10 { yield(n * 3) }
+})
+```
 
 You can use `lazySequence` to create a sequence whose generator closure is executed on a background thread, and which blocks on each `yield()` until the main thread calls `next()` to consume the value.  For example, you could do something like this to process all lines of a file as a sequence without reading the entire file into memory at once:
 
-    ```swift
-    let lines: SequenceOf<String> = lazySequence { yield in
-        let file = openInputFile()
-        while true {
-            if let line = readLineFromFile(file) {
-                yield(line)
-            }
-            else {
-                break
-            }
+```swift
+let lines: SequenceOf<String> = lazySequence { yield in
+    let file = openInputFile()
+    while true {
+        if let line = readLineFromFile(file) {
+            yield(line)
         }
-        closeFile(file)
+        else {
+            break
+        }
     }
+    closeFile(file)
+}
 
-    for line in lines {
-        processLine(line)
-    }
-    ```
+for line in lines {
+    processLine(line)
+}
+```
 
 See the `KJYieldTests.swift` file for more examples.
 
