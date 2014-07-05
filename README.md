@@ -35,4 +35,4 @@ for line in lines {
 
 See the `KJYieldTests.swift` file for more examples.
 
-Note: One limitation of `lazySequence` is that one must enumerate the entire sequence (that is, one must call the generator `next()` function until it returns `nil`). If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported.
+Note: One limitation of `lazySequence` is that one must enumerate the entire sequence (that is, one must ensure that the generator `next()` method is called until it returns `nil`). If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported.
