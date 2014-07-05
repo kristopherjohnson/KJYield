@@ -15,6 +15,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4E3A49241968A4B3007E40AD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4E9B71AB19671FAD00EAB21D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4E9B71B319671FAD00EAB21D;
+			remoteInfo = KJYield;
+		};
 		4E9B71C119671FAD00EAB21D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4E9B71AB19671FAD00EAB21D /* Project object */;
@@ -156,6 +163,7 @@
 			);
 			dependencies = (
 				4E9B71C219671FAD00EAB21D /* PBXTargetDependency */,
+				4E3A49251968A4B3007E40AD /* PBXTargetDependency */,
 			);
 			name = KJYieldTests;
 			productName = KJYieldTests;
@@ -173,6 +181,7 @@
 				TargetAttributes = {
 					4E9B71B319671FAD00EAB21D = {
 						CreatedOnToolsVersion = 6.0;
+						DevelopmentTeam = D5E423632K;
 					};
 					4E9B71BE19671FAD00EAB21D = {
 						CreatedOnToolsVersion = 6.0;
@@ -236,6 +245,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4E3A49251968A4B3007E40AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4E9B71B319671FAD00EAB21D /* KJYield */;
+			targetProxy = 4E3A49241968A4B3007E40AD /* PBXContainerItemProxy */;
+		};
 		4E9B71C219671FAD00EAB21D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4E9B71B319671FAD00EAB21D /* KJYield */;
@@ -333,6 +347,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -350,6 +365,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;

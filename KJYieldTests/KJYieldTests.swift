@@ -167,47 +167,53 @@ class KJYieldTests: XCTestCase {
     }
     
     func testAsyncReadFileByLine() {
+        
+        // Return a lazily evaluated sequence of lines read from specified file
+        func getLinesFromUTF8EncodedTextFileAtPath(path: NSString) -> SequenceOf<String> {
+            
+            // Determine length of null-terminated UTF8 string buffer
+            func UTF8StringLength(var charPointer: UnsafePointer<CChar>) -> Int {
+                var length = 0
+                while charPointer.memory != 0 {
+                    ++length
+                    charPointer = charPointer.succ()
+                }
+                return length
+            }
+            
+            // Read line from file. Returns line, or nil if at end-of-file
+            func readLineFromFile(file: UnsafePointer<FILE>) -> String? {
+                var buffer = Array<CChar>(count: 4096, repeatedValue: 0)
+                let lineBytes = fgets(&buffer, CInt(buffer.count), file)
+                if lineBytes {
+                    let length = UTF8StringLength(lineBytes)
+                    let string = NSString(bytes: lineBytes, length: length, encoding: NSUTF8StringEncoding)
+                    return string
+                }
+                else {
+                    return nil
+                }
+            }
+            
+            return lazySequence { yield in
+                let file = fopen(path.UTF8String, "r")
+                while true {
+                    if let line = readLineFromFile(file) {
+                        yield(line)
+                    }
+                    else {
+                        break
+                    }
+                }
+                fclose(file)
+            }
+        }
+
         // Use TestData.txt resource from test bundle
         let testBundle = NSBundle(forClass: KJYieldTests.self)
         let testDataPath: NSString! = testBundle.pathForResource("TestData", ofType: "txt")
         
-        // Determine length of null-terminated UTF8 string buffer
-        func UTF8StringLength(var charPointer: UnsafePointer<CChar>) -> Int {
-            var length = 0
-            while charPointer.memory != 0 {
-                ++length
-                charPointer = charPointer.succ()
-            }
-            return length
-        }
-        
-        // Read line from file. Returns line or nil if at end-of-file
-        func readLineFromFile(file: UnsafePointer<FILE>) -> String? {
-            var buffer = Array<CChar>(count: 4096, repeatedValue: 0)
-            let lineBytes = fgets(&buffer, CInt(buffer.count), file)
-            if lineBytes {
-                let length = UTF8StringLength(lineBytes)
-                let string = NSString(bytes: lineBytes, length: length, encoding: NSUTF8StringEncoding)
-                return string
-            }
-            else {
-                return nil
-            }
-        }
-        
-        let lines: SequenceOf<String> = lazySequence { yield in
-            let file = fopen(testDataPath.UTF8String, "r")
-            while true {
-                if let line = readLineFromFile(file) {
-                    yield(line)
-                }
-                else {
-                    break
-                }
-            }
-            fclose(file)
-        }
-        
+        let lines = getLinesFromUTF8EncodedTextFileAtPath(testDataPath)
         var lineNumber = 0
         for line in lines {
             ++lineNumber
