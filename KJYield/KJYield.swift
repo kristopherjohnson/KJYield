@@ -138,7 +138,7 @@ func sequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
 //
 // The closure is executed on another thread, and each call to yield()
 // will block until next() is called by the generator's thread.
-func lazy_sequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
+func lazySequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
     return SequenceOf<T>({LazyYieldGenerator(yielder)})
 }
 

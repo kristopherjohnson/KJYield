@@ -107,7 +107,7 @@ class KJYieldTests: XCTestCase {
         var yieldCount = 0
         var yielderComplete = false
         
-        let seq: SequenceOf<Int> = lazy_sequence { yield in
+        let seq: SequenceOf<Int> = lazySequence { yield in
             ++yieldCount
             yield(1)
             
@@ -145,7 +145,7 @@ class KJYieldTests: XCTestCase {
     func testDeckOfCards() {
         let suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
         let ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
-        let seq: SequenceOf<String> = lazy_sequence { yield in
+        let seq: SequenceOf<String> = lazySequence { yield in
             for suit in suits {
                 for rank in ranks {
                     yield("\(rank) of \(suit)")
@@ -195,7 +195,7 @@ class KJYieldTests: XCTestCase {
             }
         }
         
-        let lines: SequenceOf<String> = lazy_sequence { yield in
+        let lines: SequenceOf<String> = lazySequence { yield in
             let file = fopen(testDataPath.UTF8String, "r")
             while true {
                 if let line = readLineFromFile(file) {
@@ -234,7 +234,7 @@ class KJYieldTests: XCTestCase {
     }
     
     func testEmptyLazySequence() {
-        let array = Array<String>(lazy_sequence { yield in return })
+        let array = Array<String>(lazySequence { yield in return })
         
         XCTAssertTrue(array.isEmpty)
     }
