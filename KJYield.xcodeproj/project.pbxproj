@@ -10,6 +10,8 @@
 		4E9B71BA19671FAD00EAB21D /* KJYield.h in Headers */ = {isa = PBXBuildFile; fileRef = 4E9B71B919671FAD00EAB21D /* KJYield.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4E9B71C019671FAD00EAB21D /* KJYield.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E9B71B419671FAD00EAB21D /* KJYield.framework */; };
 		4E9B71C719671FAD00EAB21D /* KJYieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9B71C619671FAD00EAB21D /* KJYieldTests.swift */; };
+		4EACB56D196847E800590A1F /* KJYield.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EACB56C196847E800590A1F /* KJYield.swift */; };
+		4EACB57119684D1A00590A1F /* TestData.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4EACB57019684D1A00590A1F /* TestData.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +31,10 @@
 		4E9B71BF19671FAD00EAB21D /* KJYieldTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KJYieldTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E9B71C519671FAD00EAB21D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4E9B71C619671FAD00EAB21D /* KJYieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KJYieldTests.swift; sourceTree = "<group>"; };
+		4EACB56C196847E800590A1F /* KJYield.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KJYield.swift; sourceTree = "<group>"; };
+		4EACB56E1968488100590A1F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+		4EACB56F196848AB00590A1F /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		4EACB57019684D1A00590A1F /* TestData.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TestData.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +59,8 @@
 		4E9B71AA19671FAD00EAB21D = {
 			isa = PBXGroup;
 			children = (
+				4EACB56F196848AB00590A1F /* LICENSE */,
+				4EACB56E1968488100590A1F /* README.md */,
 				4E9B71B619671FAD00EAB21D /* KJYield */,
 				4E9B71C319671FAD00EAB21D /* KJYieldTests */,
 				4E9B71B519671FAD00EAB21D /* Products */,
@@ -72,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				4E9B71B919671FAD00EAB21D /* KJYield.h */,
+				4EACB56C196847E800590A1F /* KJYield.swift */,
 				4E9B71B719671FAD00EAB21D /* Supporting Files */,
 			);
 			path = KJYield;
@@ -98,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				4E9B71C519671FAD00EAB21D /* Info.plist */,
+				4EACB57019684D1A00590A1F /* TestData.txt */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -200,6 +210,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EACB57119684D1A00590A1F /* TestData.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,6 +221,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EACB56D196847E800590A1F /* KJYield.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,6 +332,7 @@
 		4E9B71CB19671FAD00EAB21D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -329,12 +342,14 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
 		4E9B71CC19671FAD00EAB21D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -398,6 +413,7 @@
 				4E9B71CC19671FAD00EAB21D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		4E9B71CD19671FAD00EAB21D /* Build configuration list for PBXNativeTarget "KJYieldTests" */ = {
 			isa = XCConfigurationList;
@@ -406,6 +422,7 @@
 				4E9B71CF19671FAD00EAB21D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
