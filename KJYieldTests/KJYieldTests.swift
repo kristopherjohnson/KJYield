@@ -195,13 +195,8 @@ class KJYieldTests: XCTestCase {
             
             return lazySequence { yield in
                 let file = fopen(path.UTF8String, "r")
-                while true {
-                    if let line = readLineFromFile(file) {
-                        yield(line)
-                    }
-                    else {
-                        break
-                    }
+                while let line = readLineFromFile(file) {
+                    yield(line)
                 }
                 fclose(file)
             }
