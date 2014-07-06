@@ -13,7 +13,7 @@ func lazySequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T>
 
 The type _T_ is the type of the elements in the generated sequence. The `yielder` argument is a closure that takes a function, `yield(T)`, that can be called within the closure to add a value to the generated sequeence.
 
-The typical pattern for using the functions looks like this:
+The typical patterns for using the functions look like this:
 
 ```swift
 // Generate a sequence of T
@@ -31,7 +31,7 @@ let array = Array<T>(sequence { yield in
 })
 ```
 
-For example, you can generate an array with the values `[3, 6, 9, 12, ..., 27, 30]` like this:
+For example, you can generate an array with the values `[3, 6, 9, 12, ..., 27, 30]`:
 
 ```swift
 let array = Array<Int>(sequence { yield in
@@ -39,7 +39,7 @@ let array = Array<Int>(sequence { yield in
 })
 ```
 
-Or you can generate a Fibonacci sequence like this:
+Or you can generate a Fibonacci sequence:
 
 ```swift
 // Produce first 20 elements of Fibonacci sequence
@@ -54,7 +54,7 @@ let fibSequence = Array<Int>(sequence { yield in
 })
 ```
 
-Or you can generate a deck of playing cards like this:
+Or you can generate a deck of playing cards:
 
 ```swift
 let suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
@@ -71,27 +71,33 @@ for card in deckOfCards {
 }
 ```
 
-The `sequence` function immediately evaluates the expressions. The `lazySequence` function executes the expressions on background thread, and each call to `yield()` until the main thread calls `next()` to consume the value.  For example, you could do something like this to process all lines of a file as a sequence without reading the entire file into memory at once:
+The `sequence` function immediately evaluates its closure. The `lazySequence` function executes the closure on a background thread, and each call to `yield(T)` blocks until the main thread calls `next()` to consume the value.
+
+For example, using `lazySequence` you could do something like this to process all lines of a file as a sequence without reading the entire file into memory at once:
 
 ```swift
-let lines: SequenceOf<String> = lazySequence { yield in
-    let file = openInputFile()
-    while true {
-        if let line = readLineFromFile(file) {
-            yield(line)
+func getLinesFromFileAtPath(path: String) -> SequenceOf<String> {
+    return lazySequence { yield in
+        let file = openFileAtPath(path)
+        while true {
+            if let line = readLineFromFile(file) {
+                yield(line)
+            }
+            else {
+                break
+            }
         }
-        else {
-            break
-        }
+        closeFile(file)
     }
-    closeFile(file)
 }
 
-for line in lines {
+
+for line in getLinesFromFileAtPath(filePath) {
     processLine(line)
 }
 ```
 
+Note: One limitation of `lazySequence` is that one must enumerate the entire sequence (that is, one must ensure that the generator `next()` method is called until it returns `nil`). If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported, but a workaround is to just provide a "done" flag or other mechanism whereby the generator can cause the closure to stop calling `yield()` and return.
+
 See the unit tests in [KJYieldTests.swift](https://github.com/kristopherjohnson/KJYield/blob/master/KJYieldTests/KJYieldTests.swift) for more examples.
 
-Note: One limitation of `lazySequence` is that one must enumerate the entire sequence (that is, one must ensure that the generator `next()` method is called until it returns `nil`). If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported.
