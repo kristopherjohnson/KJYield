@@ -226,6 +226,153 @@ class KJYieldTests: XCTestCase {
         }
     }
     
+    func testTokenizeAndParse() {
+        
+        // This is a simple Reverse Polish Notation (RPN) calculator.
+        //
+        // Input tokens consist of the following:
+        //
+        // - <sequence of numeric characters>: integer value, which is pushed onto the RPN stack
+        // - "+": pops two integers from the stack, adds them, and pushes the sum on the stack
+        // - "*": pops two integers from the stack, multiplies them, and pushes the product on the stack
+        // - "=": pops an integer from the stack and produces it as a result
+        //
+        // All other input characters are ignored
+        //
+        // The implementation uses two lazy sequences:
+        //
+        // - The tokenizer reads a sequence of characters to lazily produce a sequence of tokens
+        // - The parser reads the sequence of tokens to lazily produce a sequence of expression results
+        //
+        // This use of two sequences makes it easy to keep the tokenizer's state machine separate
+        // from the parser's state machine without tokenizing the entire input before passing it to
+        // the parser. (The tokenizer and parser run on separate background threads.)
+        //
+        // This test simply parses a string, but this could be combined with code from testAsyncReadFileByLine()
+        // to add another layer of lazy evaluation.
+        
+        enum Token {
+            case Integer(Int)
+            case Multiply
+            case Plus
+            case GetResult
+        }
+        
+        struct Stack<T> {
+            var values = Array<T>()
+            
+            mutating func push(value: T) {
+                values.append(value)
+            }
+            
+            mutating func pop() -> T {
+                return values.removeLast()
+            }
+        }
+        
+        // Returns sequence of tokens read from character sequence
+        func tokenize(characters: SequenceOf<Character>) -> SequenceOf<Token> {
+            enum State {
+                case LookingForToken
+                case ScanningInteger
+            }
+            
+            return lazySequence { yield in
+                var state = State.LookingForToken
+                var scannedIntegerDigits = ""
+                
+                func yieldScannedInteger() {
+                    yield(.Integer(scannedIntegerDigits.bridgeToObjectiveC().integerValue))
+                }
+                
+                for ch in characters {
+                    switch ch {
+                    
+                    // For a numeric digit, start parsing integer or add on to one we're already parsing
+                    case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+                        switch state {
+                        case .LookingForToken:
+                            state = .ScanningInteger
+                            scannedIntegerDigits = String(ch)
+                        case .ScanningInteger:
+                            scannedIntegerDigits = scannedIntegerDigits + ch
+                        }
+                    
+                    // For other characters, yield the integer if we were scanning one,
+                    // then yield appropriate new token or ignore character
+                    default:
+                        if state == .ScanningInteger {
+                            yieldScannedInteger()
+                            state = .LookingForToken
+                        }
+                        
+                        switch ch {
+                            
+                        case "+":
+                            yield(.Plus)
+                        
+                        case "*":
+                            yield(.Multiply)
+                        
+                        case "=":
+                            yield(.GetResult)
+                        
+                        default:
+                            break
+                        }
+                    }
+                }
+                
+                // If we were parsing an integer when the input ended, yield it
+                if state == .ScanningInteger {
+                    yieldScannedInteger()
+                    state = .LookingForToken
+                }
+            }
+        }
+        
+        func evaluateRPN(characters: SequenceOf<Character>) -> SequenceOf<Int> {
+            return lazySequence { yield in
+                var stack = Stack<Int>()
+                for token in tokenize(characters) {
+                    switch token {
+                        
+                    case .Integer(let value):
+                        stack.push(value)
+                        
+                    case .Plus:
+                        let a = stack.pop()
+                        let b = stack.pop()
+                        stack.push(a + b)
+                        
+                    case .Multiply:
+                        let a = stack.pop()
+                        let b = stack.pop()
+                        stack.push(a * b)
+                        
+                    case .GetResult:
+                        let result = stack.pop()
+                        yield(result)
+                    }
+                }
+            }
+        }
+        
+        // Auxiliary function to convert a String to a sequence of character values
+        func evaluateRPNString(string: String) -> SequenceOf<Int> {
+            return evaluateRPN(SequenceOf(string.generate()))
+        }
+        
+        // Should generate the results [3, 200, 30] (1+2, 10*20, (1+2)*10)
+        let results = evaluateRPNString("1 2 + =  10 20 * =  1 2 + 10 * =")
+        
+        let resultsArray = Array<Int>(results)
+        XCTAssertEqual(3, resultsArray.count)
+        XCTAssertEqual(3, resultsArray[0])
+        XCTAssertEqual(200, resultsArray[1])
+        XCTAssertEqual(30, resultsArray[2])
+    }
+    
     func testEmptySequence() {
         let array = Array<String>(sequence { yield in return })
         
