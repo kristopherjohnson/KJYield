@@ -237,7 +237,7 @@ class KJYieldTests: XCTestCase {
         // - "*": pops two integers from the stack, multiplies them, and pushes the product on the stack
         // - "=": pops an integer from the stack and produces it as a result
         //
-        // All other input characters are ignored
+        // All other input characters are ignored.
         //
         // The implementation uses two lazy sequences:
         //

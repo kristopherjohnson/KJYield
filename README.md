@@ -91,6 +91,48 @@ for line in getLinesFromFileAtPath(filePath) {
 }
 ```
 
+This idea can be extended to use a lazy sequence for each stage of a multi-stage process, so each stage maintains its own state machine on its own thread and shares data with other stages only via `yield()`. For example, a program that reads input from a file, tokenizes it, parses it into executable statements, and evaluates the results could be implemented like this:
+
+```swift
+func getCharactersFromFileAtPath(path: String) -> SequenceOf<Character> {
+    return lazySequence { yield in
+        let file = openFileAtPath(path)
+        while let ch = readCharacterFromFile(file) {
+            yield(ch)
+        }
+        closeFile(file)
+    }
+}
+
+func tokenize(characters: SequenceOf<Character>) -> SequenceOf<Token> {
+    return lazySequence { yield in
+        for ch in characters {
+            // yield tokens
+        }
+    }
+}
+
+func parse(tokens: SequenceOf<Tokens>) -> SequenceOf<Statement> {
+    return lazySequence { yield in
+        for token in tokens {
+            // yield commands
+        }
+    }
+}
+
+func execute(Statement: SequenceOf<Statement>) -> SequenceOf<Result> {
+    return lazySequence { yield in
+        for statement in statements {
+            // yield results
+        }
+    }
+}
+
+for result in execute(parse(tokenize(getCharactersFromFileAtPath(path)))) {
+    // display or record the result
+}
+```
+
 Note: A limitation of `lazySequence` is that you must enumerate the _entire_ sequence: that is, once the generator's `next()` method is called it must be called until it returns `nil`. If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported. A workaround for this limitation is to provide a "done" flag or other mechanism that allows the client code to signal to the closure that it should stop calling `yield()` and return.
 
 See the unit tests in [KJYieldTests.swift](https://github.com/kristopherjohnson/KJYield/blob/master/KJYieldTests/KJYieldTests.swift) for more examples.
