@@ -54,7 +54,7 @@ let fibSequence = Array<Int>(sequence { yield in
 })
 ```
 
-Or you can generate a deck of playing cards:
+Or you can generate a sequence of playing-card names:
 
 ```swift
 let suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
@@ -91,13 +91,12 @@ func getLinesFromFileAtPath(path: String) -> SequenceOf<String> {
     }
 }
 
-
 for line in getLinesFromFileAtPath(filePath) {
     processLine(line)
 }
 ```
 
-Note: One limitation of `lazySequence` is that one must enumerate the entire sequence (that is, one must ensure that the generator `next()` method is called until it returns `nil`). If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported, but a workaround is to just provide a "done" flag or other mechanism whereby the generator can cause the closure to stop calling `yield()` and return.
+Note: A limitation of `lazySequence` is that one must enumerate the _entire_ sequence: that is, once the generator's `next()` method is called it must be called until it returns `nil`. If a lazy sequence is left partially unenumerated, memory and GCD objects will be leaked. This implies that infinite sequences are not supported. A workaround for this limitation is to provide a "done" flag or other mechanism that allows the client code to signal to the closure that it should stop calling `yield()` and return.
 
 See the unit tests in [KJYieldTests.swift](https://github.com/kristopherjohnson/KJYield/blob/master/KJYieldTests/KJYieldTests.swift) for more examples.
 
