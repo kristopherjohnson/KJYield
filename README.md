@@ -43,7 +43,7 @@ Or you can generate a Fibonacci sequence:
 
 ```swift
 // Produce first 20 elements of Fibonacci sequence
-let fibSequence = Array<Int>(sequence { yield in
+let fibArray = Array<Int>(sequence { yield in
     var a = 0, b = 1
     for _ in 0..20 {
         yield(b)
@@ -57,9 +57,9 @@ let fibSequence = Array<Int>(sequence { yield in
 Or you can generate a sequence of playing-card names:
 
 ```swift
-let suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
-let ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
 let deckOfCards: SequenceOf<String> = lazySequence { yield in
+    let suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
+    let ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
     for suit in suits {
         for rank in ranks {
             yield("\(rank) of \(suit)")
@@ -71,7 +71,7 @@ for card in deckOfCards {
 }
 ```
 
-The `sequence` function immediately evaluates its closure. The `lazySequence` function executes the closure on a background thread, and each call to `yield(T)` blocks until the main thread calls `next()` to consume the value.
+The `sequence` function immediately evaluates its closure and creates a collection of the generated elements. The `lazySequence` function executes its closure on a background thread, and each call to `yield(T)` blocks until the main thread calls `next()` to consume the value.
 
 For example, using `lazySequence` you could do something like this to process all lines of a file as a sequence without reading the entire file into memory at once:
 
