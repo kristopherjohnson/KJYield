@@ -43,12 +43,10 @@ class KJYieldTests: XCTestCase {
     func testFibonacciSequence() {
         // Produce first 20 elements of Fibonacci sequence
         let fibs = Array<Int>(sequence { yield in
-            var a = 1, b = 1
-            yield(a)
-            yield(b)
-            for _ in 0..18 {
+            var a = 0, b = 1
+            for _ in 0..20 {
+                yield(b)
                 let sum = a + b
-                yield(sum)
                 a = b
                 b = sum
             }
