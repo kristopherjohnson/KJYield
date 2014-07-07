@@ -26,12 +26,12 @@ struct YieldGenerator<T>: Generator {
     var _yieldedValues = Array<T>()
     var _index = 0
     
-    mutating func yield(value: T) {
+    mutating func _yield(value: T) {
         _yieldedValues.append(value)
     }
     
     init(_ yielder: ((T) -> ()) -> ()) {
-        yielder(yield)
+        yielder(_yield)
     }
     
     mutating func next() -> T? {
