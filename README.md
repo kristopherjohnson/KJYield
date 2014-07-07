@@ -45,7 +45,7 @@ Or you can generate a Fibonacci sequence:
 // Produce first 20 elements of Fibonacci sequence
 let fibArray = Array<Int>(sequence { yield in
     var a = 0, b = 1
-    for _ in 0..20 {
+    for _ in 1...20 {
         yield(b)
         let sum = a + b
         a = b

@@ -120,7 +120,7 @@ struct LazyYieldGenerator<T>: Generator {
     }
     
     mutating func next() -> T? {
-        if _task == nil {
+        if !_task {
             _task = LazyYieldTask(_yielder)
         }
         

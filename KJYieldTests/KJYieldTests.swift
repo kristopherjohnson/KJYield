@@ -28,7 +28,7 @@ class KJYieldTests: XCTestCase {
     func testNumericSequence() {
         // Sequence [3, 6, 9, 12, 15]
         let seq: SequenceOf<Int> = sequence { yield in
-            for n in 0..5 { yield((n+1) * 3) }
+            for n in 0...4 { yield((n+1) * 3) }
         }
         
         var a = Array<Int>(seq)
@@ -44,7 +44,7 @@ class KJYieldTests: XCTestCase {
         // Produce first 20 elements of Fibonacci sequence
         let fibs = Array<Int>(sequence { yield in
             var a = 0, b = 1
-            for _ in 0..20 {
+            for _ in 1...20 {
                 yield(b)
                 let sum = a + b
                 a = b
@@ -174,7 +174,7 @@ class KJYieldTests: XCTestCase {
                 var length = 0
                 while charPointer.memory != 0 {
                     ++length
-                    charPointer = charPointer.succ()
+                    charPointer = charPointer.successor()
                 }
                 return length
             }
