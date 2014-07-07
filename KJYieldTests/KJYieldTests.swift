@@ -204,7 +204,7 @@ class KJYieldTests: XCTestCase {
 
         // Use TestData.txt resource from test bundle
         let testBundle = NSBundle(forClass: KJYieldTests.self)
-        let testDataPath: NSString! = testBundle.pathForResource("TestData", ofType: "txt")
+        let testDataPath = testBundle.pathForResource("TestData", ofType: "txt")
         
         let lines = getLinesFromUTF8EncodedTextFileAtPath(testDataPath)
         var lineNumber = 0
@@ -226,7 +226,7 @@ class KJYieldTests: XCTestCase {
         }
     }
     
-    func testTokenizeAndParse() {
+    func testLazyScanAndEvaluate() {
         
         // This is a simple Reverse Polish Notation (RPN) calculator.
         //
@@ -241,23 +241,54 @@ class KJYieldTests: XCTestCase {
         //
         // The implementation uses two lazy sequences:
         //
-        // - The tokenizer reads a sequence of characters to lazily produce a sequence of tokens
-        // - The parser reads the sequence of tokens to lazily produce a sequence of expression results
+        // - The scanner reads a sequence of characters to lazily produce a sequence of tokens
+        // - The parser reads the sequence of tokens to lazily produce a sequence of results
         //
         // This use of two sequences makes it easy to keep the tokenizer's state machine separate
         // from the parser's state machine without tokenizing the entire input before passing it to
         // the parser. (The tokenizer and parser run on separate background threads.)
         //
-        // This test simply parses a string, but this could be combined with code from testAsyncReadFileByLine()
-        // to add another layer of lazy evaluation.
+        // This test simply parses a string, but this could be combined with code from
+        // testAsyncReadFileByLine() to add another layer of lazy evaluation.
         
-        enum Token {
+        // If showTraceOutput is true, then generate trace output in the debugger window.
+        // This is interesting to verify that the tokenizing and evaluation are interleaved
+        // and running on different threads
+        let showTraceOutput = false
+        
+        // Queue used to serialize trace output from multiple threads
+        var traceSyncQueue = dispatch_queue_create("testLazyScanAndEvaluate", DISPATCH_QUEUE_SERIAL)
+
+        func trace(functionName: String, messageExpression: @auto_closure () -> String) {
+            if showTraceOutput {
+                dispatch_sync(traceSyncQueue) {
+                    let threadId = pthread_mach_thread_np(pthread_self())
+                    println("testLazyScanAndEvaluate (\(threadId)): \(functionName): \(messageExpression())")
+                }
+            }
+        }
+        
+        // RPN calculator tokens
+        enum Token: Printable {
             case Integer(Int)
             case Multiply
             case Plus
             case GetResult
+            
+            var description: String {
+                switch (self) {
+                case .Integer(let value):
+                    return "Integer(\(value.description))"
+                case .Multiply:
+                    return "Multiply"
+                case .Plus:
+                    return "Plus"
+                case .GetResult:
+                    return "GetResult"
+                }
+            }
         }
-        
+
         struct Stack<T> {
             var values = Array<T>()
             
@@ -270,15 +301,26 @@ class KJYieldTests: XCTestCase {
             }
         }
         
-        // Returns sequence of tokens read from character sequence
+        func characterSequenceFromString(string: String) -> SequenceOf<Character> {
+            trace("characterSequenceFromString", "create character sequence")
+            return SequenceOf(string.generate())
+        }
+        
+        // Returns sequence of tokens scanned from character sequence
         func tokenize(characters: SequenceOf<Character>) -> SequenceOf<Token> {
-            enum State {
+            enum ScannerState {
                 case LookingForToken
                 case ScanningInteger
             }
             
-            return lazySequence { yield in
-                var state = State.LookingForToken
+            return lazySequence { _yield in
+                
+                func yield(token: Token) {
+                    trace("tokenize", "yield(\(token))")
+                    _yield(token)
+                }
+                
+                var state = ScannerState.LookingForToken
                 var scannedIntegerDigits = ""
                 
                 func yieldScannedInteger() {
@@ -331,40 +373,50 @@ class KJYieldTests: XCTestCase {
             }
         }
         
-        func evaluateRPN(characters: SequenceOf<Character>) -> SequenceOf<Int> {
-            return lazySequence { yield in
+        func evaluate(tokens: SequenceOf<Token>) -> SequenceOf<Int> {
+            return lazySequence { _yield in
+
+                func yield(result: Int) {
+                    trace("evaluate", "yield(\(result))")
+                    _yield(result)
+                }
+                
                 var stack = Stack<Int>()
-                for token in tokenize(characters) {
+                for token in tokens {
+                    trace("evaluate", "next token is \(token)")
+                    
                     switch token {
                         
                     case .Integer(let value):
+                        trace("evaluate", "push(\(value))")
                         stack.push(value)
                         
                     case .Plus:
                         let a = stack.pop()
                         let b = stack.pop()
-                        stack.push(a + b)
+                        let sum = a + b
+                        trace("evaluate", "pop \(a) and \(b); push sum \(sum)")
+                        stack.push(sum)
                         
                     case .Multiply:
                         let a = stack.pop()
                         let b = stack.pop()
-                        stack.push(a * b)
+                        let product = a * b
+                        trace("evaluate", "pop \(a) and \(b); push product \(product)")
+                        stack.push(product)
                         
                     case .GetResult:
                         let result = stack.pop()
+                        trace("evaluate", "pop \(result)")
                         yield(result)
                     }
                 }
             }
         }
         
-        // Auxiliary function to convert a String to a sequence of character values
-        func evaluateRPNString(string: String) -> SequenceOf<Int> {
-            return evaluateRPN(SequenceOf(string.generate()))
-        }
-        
         // Should generate the results [3, 200, 30] (1+2, 10*20, (1+2)*10)
-        let results = evaluateRPNString("1 2 + =  10 20 * =  1 2 + 10 * =")
+        let inputString = "1 2 + =  10 20 * =  1 2 + 10 * ="
+        let results = evaluate(tokenize(characterSequenceFromString(inputString)))
         
         let resultsArray = Array<Int>(results)
         XCTAssertEqual(3, resultsArray.count)
