@@ -239,21 +239,15 @@ class KJYieldTests: XCTestCase {
         //
         // All other input characters are ignored.
         //
-        // The implementation uses two lazy sequences:
+        // The implementation uses three lazy sequences:
         //
+        // - A sequence of characters is lazily produced from a string (simulating I/O)
         // - The scanner reads a sequence of characters to lazily produce a sequence of tokens
         // - The parser reads the sequence of tokens to lazily produce a sequence of results
-        //
-        // This use of two sequences makes it easy to keep the tokenizer's state machine separate
-        // from the parser's state machine without tokenizing the entire input before passing it to
-        // the parser. (The tokenizer and parser run on separate background threads.)
-        //
-        // This test simply parses a string, but this could be combined with code from
-        // testAsyncReadFileByLine() to add another layer of lazy evaluation.
         
         // If showTraceOutput is true, then generate trace output in the debugger window.
-        // This is interesting to verify that the tokenizing and evaluation are interleaved
-        // and running on different threads
+        // This is interesting to verify that the I/O, tokenizing and evaluation are
+        // interleaved and running on different threads.
         let showTraceOutput = false
         
         // Queue used to serialize trace output from multiple threads
@@ -302,8 +296,17 @@ class KJYieldTests: XCTestCase {
         }
         
         func characterSequenceFromString(string: String) -> SequenceOf<Character> {
-            trace("characterSequenceFromString", "create character sequence")
-            return SequenceOf(string.generate())
+            return lazySequence { _yield in
+                func yield(character: Character) {
+                    trace("characterSequenceFromString", "yield(\"\(character)\")")
+                    _yield(character)
+                }
+                
+                for character in string {
+                    yield(character)
+                }
+                trace("characterSequenceFromString", "terminates")
+            }
         }
         
         // Returns sequence of tokens scanned from character sequence
@@ -370,6 +373,8 @@ class KJYieldTests: XCTestCase {
                     yieldScannedInteger()
                     state = .LookingForToken
                 }
+                
+                trace("tokenize", "terminates")
             }
         }
         
@@ -411,6 +416,8 @@ class KJYieldTests: XCTestCase {
                         yield(result)
                     }
                 }
+                
+                trace("evaluate", "terminates")
             }
         }
         
