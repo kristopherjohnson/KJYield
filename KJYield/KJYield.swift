@@ -22,20 +22,20 @@
 import Foundation
 
 // Generates values from a closure that invokes a "yield" function
-struct YieldGenerator<T>: Generator {
-    var _yieldedValues = Array<T>()
-    var _index = 0
+public struct YieldGenerator<T>: Generator {
+    private var yieldedValues = Array<T>()
+    private var index = 0
     
-    mutating func _yield(value: T) {
-        _yieldedValues.append(value)
+    private mutating func yield(value: T) {
+        yieldedValues.append(value)
     }
     
-    init(_ yielder: ((T) -> ()) -> ()) {
-        yielder(_yield)
+    public init(_ yielder: ((T) -> ()) -> ()) {
+        yielder(yield)
     }
     
-    mutating func next() -> T? {
-        return _index < _yieldedValues.count ? _yieldedValues[_index++] : nil
+    public mutating func next() -> T? {
+        return index < yieldedValues.count ? yieldedValues[index++] : nil
     }
 }
 
@@ -43,25 +43,28 @@ struct YieldGenerator<T>: Generator {
 //
 // (This should be a nested class of LazyYieldGenerator, but the Xcode 6 Beta 2 editor freaks out.)
 class LazyYieldTask<T> {
-    let _yielder: ((T) -> ()) -> ()
-    let _semValueDesired: dispatch_semaphore_t
-    let _semValueAvailable: dispatch_semaphore_t
-    let _syncQueue: dispatch_queue_t
+    private let _yielder: ((T) -> ()) -> ()
+    private let _semValueDesired: dispatch_semaphore_t
+    private let _semValueAvailable: dispatch_semaphore_t
+    private let _syncQueue: dispatch_queue_t
     
-    var _lastYieldedValue = Array<T>()
-    var _isBackgroundTaskRunning = false
-    var _isComplete = false
+    private var _lastYieldedValue = Array<T>()
+    private var _isBackgroundTaskRunning = false
+    private var _isComplete = false
     
-    init(_ yielder: ((T) -> ()) -> ()) {
+    public init(_ yielder: ((T) -> ()) -> ()) {
         _yielder = yielder
         
         _semValueDesired = dispatch_semaphore_create(0)
         _semValueAvailable = dispatch_semaphore_create(0)
+        
+        // TODO: analyze whether this queue is necessary.
+        // The semaphores may be enough to ensure proper synchronization.
         _syncQueue = dispatch_queue_create("LazyYieldTask syncQueue", DISPATCH_QUEUE_SERIAL)
     }
     
     // Called from background thread to yield a value to be returned by next()
-    func _yield(value: T) {
+    private func _yield(value: T) {
         dispatch_semaphore_wait(_semValueDesired, DISPATCH_TIME_FOREVER)
         dispatch_sync(_syncQueue) {
             self._lastYieldedValue = [value]
@@ -70,7 +73,7 @@ class LazyYieldTask<T> {
     }
     
     // Called from background thread to yield nil from next()
-    func _yieldNil() {
+    private func _yieldNil() {
         dispatch_semaphore_wait(_semValueDesired, DISPATCH_TIME_FOREVER)
         dispatch_sync(_syncQueue) {
             self._lastYieldedValue = Array<T>()
@@ -79,7 +82,7 @@ class LazyYieldTask<T> {
     }
     
     // Called from generator thread to get next yielded value
-    func next() -> T? {
+    private func next() -> T? {
         if !_isBackgroundTaskRunning {
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
                 self.run()
@@ -90,7 +93,7 @@ class LazyYieldTask<T> {
         dispatch_semaphore_signal(_semValueDesired)
         dispatch_semaphore_wait(_semValueAvailable, DISPATCH_TIME_FOREVER)
         
-        var value: T?
+        var value: T? = nil
         dispatch_sync(_syncQueue) {
             if !self._lastYieldedValue.isEmpty {
                 value = self._lastYieldedValue[0]
@@ -101,7 +104,7 @@ class LazyYieldTask<T> {
     }
     
     // Executed in background thread
-    func run() {
+    private func run() {
         _yielder(_yield)
         _yieldNil()
     }
@@ -111,15 +114,15 @@ class LazyYieldTask<T> {
 //
 // The yielder closure is executed on another thread, and each call to yield()
 // will block until next() is called by the generator's thread.
-struct LazyYieldGenerator<T>: Generator {
-    var _task: LazyYieldTask<T>?
-    let _yielder: ((T) -> ()) -> ()
+public struct LazyYieldGenerator<T>: Generator {
+    private var _task: LazyYieldTask<T>?
+    private let _yielder: ((T) -> ()) -> ()
     
-    init(_ yielder: ((T) -> ()) -> ()) {
+    public init(_ yielder: ((T) -> ()) -> ()) {
         _yielder = yielder
     }
     
-    mutating func next() -> T? {
+    public mutating func next() -> T? {
         if !_task {
             _task = LazyYieldTask(_yielder)
         }
@@ -130,7 +133,7 @@ struct LazyYieldGenerator<T>: Generator {
 
 
 // Create a sequence from a closure that invokes a "yield" function
-func sequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
+public func sequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
     return SequenceOf<T>({YieldGenerator(yielder)})
 }
 
@@ -138,7 +141,7 @@ func sequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
 //
 // The closure is executed on another thread, and each call to yield()
 // will block until next() is called by the generator's thread.
-func lazySequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
+public func lazySequence<T>(yielder: ((T) -> ()) -> ()) -> SequenceOf<T> {
     return SequenceOf<T>({LazyYieldGenerator(yielder)})
 }
 
