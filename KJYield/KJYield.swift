@@ -22,7 +22,7 @@
 import Foundation
 
 // Generates values from a closure that invokes a "yield" function
-public struct YieldGenerator<T>: Generator {
+public struct YieldGenerator<T>: GeneratorType {
     private var yieldedValues = Array<T>()
     private var index = 0
     
@@ -114,7 +114,7 @@ class LazyYieldTask<T> {
 //
 // The yielder closure is executed on another thread, and each call to yield()
 // will block until next() is called by the generator's thread.
-public struct LazyYieldGenerator<T>: Generator {
+public struct LazyYieldGenerator<T>: GeneratorType {
     private var _task: LazyYieldTask<T>?
     private let _yielder: ((T) -> ()) -> ()
     
@@ -123,7 +123,7 @@ public struct LazyYieldGenerator<T>: Generator {
     }
     
     public mutating func next() -> T? {
-        if !_task {
+        if !(_task != nil) {
             _task = LazyYieldTask(_yielder)
         }
         
