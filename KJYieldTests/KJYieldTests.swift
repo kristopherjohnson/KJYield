@@ -274,7 +274,7 @@ class KJYieldTests: XCTestCase {
         // If showTraceOutput is true, then generate trace output in the debugger window.
         // This is interesting to verify that the I/O, tokenizing and evaluation are
         // interleaved and running on different threads.
-        let showTraceOutput = true
+        let showTraceOutput = false
         
         // Queue used to serialize trace output from multiple threads
         var traceSyncQueue = dispatch_queue_create("testLazyScanAndEvaluate", DISPATCH_QUEUE_SERIAL)
