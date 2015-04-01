@@ -23,6 +23,18 @@ import XCTest
 import Foundation
 import KJYield
 
+struct Stack<T> {
+    var values = Array<T>()
+    
+    mutating func push(value: T) {
+        values.append(value)
+    }
+    
+    mutating func pop() -> T {
+        return values.removeLast()
+    }
+}
+
 class KJYieldTests: XCTestCase {
     
     func testNumericSequence() {
@@ -180,13 +192,15 @@ class KJYieldTests: XCTestCase {
             }
             
             // Read line from file. Returns line, or nil if at end-of-file
-            func readLineFromFile(file: UnsafePointer<FILE>) -> String? {
+            func readLineFromFile(file: UnsafeMutablePointer<FILE>) -> String? {
                 var buffer = Array<CChar>(count: 4096, repeatedValue: 0)
                 let lineBytes = fgets(&buffer, CInt(buffer.count), file)
-                if lineBytes {
+                if lineBytes != nil {
                     let length = UTF8StringLength(lineBytes)
-                    let string = NSString(bytes: lineBytes, length: length, encoding: NSUTF8StringEncoding)
-                    return string
+                    if let string = NSString(bytes: lineBytes, length: length, encoding: NSUTF8StringEncoding) {
+                        return string as String
+                    }
+                    return nil
                 }
                 else {
                     return nil
@@ -206,7 +220,7 @@ class KJYieldTests: XCTestCase {
         let testBundle = NSBundle(forClass: KJYieldTests.self)
         let testDataPath = testBundle.pathForResource("TestData", ofType: "txt")
         
-        let lines = getLinesFromUTF8EncodedTextFileAtPath(testDataPath)
+        let lines = getLinesFromUTF8EncodedTextFileAtPath(testDataPath!)
         var lineNumber = 0
         for line in lines {
             ++lineNumber
@@ -225,7 +239,19 @@ class KJYieldTests: XCTestCase {
             }
         }
     }
-    
+    func get_trace_func(name:String, traceSyncQueue: dispatch_queue_t, showTraceOutput:Bool) -> ((String, () -> String) -> Void) {
+        func trace(functionName: String, messageExpression: () -> String) -> Void {
+            if showTraceOutput {
+                dispatch_sync(traceSyncQueue) {
+                    let threadId = pthread_mach_thread_np(pthread_self())
+                    println("\(name) (\(threadId)): \(functionName): \(messageExpression())")
+                }
+            }
+        }
+        return trace
+    }
+
+
     func testLazyScanAndEvaluate() {
         
         // This is a simple Reverse Polish Notation (RPN) calculator.
@@ -252,15 +278,9 @@ class KJYieldTests: XCTestCase {
         
         // Queue used to serialize trace output from multiple threads
         var traceSyncQueue = dispatch_queue_create("testLazyScanAndEvaluate", DISPATCH_QUEUE_SERIAL)
+        let trace = get_trace_func("testLazyScanAndEvaluate", traceSyncQueue: traceSyncQueue, showTraceOutput: showTraceOutput)
 
-        func trace(functionName: String, messageExpression: @auto_closure () -> String) {
-            if showTraceOutput {
-                dispatch_sync(traceSyncQueue) {
-                    let threadId = pthread_mach_thread_np(pthread_self())
-                    println("testLazyScanAndEvaluate (\(threadId)): \(functionName): \(messageExpression())")
-                }
-            }
-        }
+
         
         // RPN calculator tokens
         enum Token: Printable {
@@ -282,32 +302,29 @@ class KJYieldTests: XCTestCase {
                 }
             }
         }
-
-        struct Stack<T> {
-            var values = Array<T>()
-            
-            mutating func push(value: T) {
-                values.append(value)
-            }
-            
-            mutating func pop() -> T {
-                return values.removeLast()
-            }
-        }
         
         func characterSequenceFromString(string: String) -> SequenceOf<Character> {
             return lazySequence { _yield in
                 func yield(character: Character) {
-                    trace("characterSequenceFromString", "yield(\"\(character)\")")
+                    trace("characterSequenceFromString", { "yield(\"\(character)\")" } )
                     _yield(character)
                 }
                 
                 for character in string {
                     yield(character)
                 }
-                trace("characterSequenceFromString", "terminates")
+                trace("characterSequenceFromString", { "terminates" })
             }
         }
+        
+        func wrap_yield(_yield: (Token) -> (), _trace: (String, ()->String) -> ()) -> ((Token) -> ()) {
+            func yield(token: Token) {
+                _trace("tokenize", { "yield(\(token))" })
+                _yield(token)
+            }
+            return yield
+        }
+        
         
         // Returns sequence of tokens scanned from character sequence
         func tokenize(characters: SequenceOf<Character>) -> SequenceOf<Token> {
@@ -317,17 +334,15 @@ class KJYieldTests: XCTestCase {
             }
             
             return lazySequence { _yield in
-                
-                func yield(token: Token) {
-                    trace("tokenize", "yield(\(token))")
-                    _yield(token)
-                }
+                // To deal with swift not letting a local function refer to another local function,
+                // we will instead wrap it into a variable so we can call it anyways.
+                let yield = wrap_yield(_yield, trace)
                 
                 var state = ScannerState.LookingForToken
                 var scannedIntegerDigits = ""
                 
                 func yieldScannedInteger() {
-                    yield(.Integer(scannedIntegerDigits.bridgeToObjectiveC().integerValue))
+                    yield(.Integer(NSString(string: scannedIntegerDigits).integerValue))
                 }
                 
                 for ch in characters {
@@ -340,7 +355,7 @@ class KJYieldTests: XCTestCase {
                             state = .ScanningInteger
                             scannedIntegerDigits = String(ch)
                         case .ScanningInteger:
-                            scannedIntegerDigits = scannedIntegerDigits + ch
+                            scannedIntegerDigits = scannedIntegerDigits + String(ch)
                         }
                     
                     // For other characters, yield the integer if we were scanning one,
@@ -374,7 +389,7 @@ class KJYieldTests: XCTestCase {
                     state = .LookingForToken
                 }
                 
-                trace("tokenize", "terminates")
+                trace("tokenize", { "terminates" })
             }
         }
         
@@ -382,42 +397,42 @@ class KJYieldTests: XCTestCase {
             return lazySequence { _yield in
 
                 func yield(result: Int) {
-                    trace("evaluate", "yield(\(result))")
+                    trace("evaluate", { "yield(\(result))" })
                     _yield(result)
                 }
                 
                 var stack = Stack<Int>()
                 for token in tokens {
-                    trace("evaluate", "next token is \(token)")
+                    trace("evaluate", { "next token is \(token)" })
                     
                     switch token {
                         
                     case .Integer(let value):
-                        trace("evaluate", "push(\(value))")
+                        trace("evaluate", { "push(\(value))" })
                         stack.push(value)
                         
                     case .Plus:
                         let a = stack.pop()
                         let b = stack.pop()
                         let sum = a + b
-                        trace("evaluate", "pop \(a) and \(b); push sum \(sum)")
+                        trace("evaluate", { "pop \(a) and \(b); push sum \(sum)" })
                         stack.push(sum)
                         
                     case .Multiply:
                         let a = stack.pop()
                         let b = stack.pop()
                         let product = a * b
-                        trace("evaluate", "pop \(a) and \(b); push product \(product)")
+                        trace("evaluate", { "pop \(a) and \(b); push product \(product)" })
                         stack.push(product)
                         
                     case .GetResult:
                         let result = stack.pop()
-                        trace("evaluate", "pop \(result)")
+                        trace("evaluate", { "pop \(result)" })
                         yield(result)
                     }
                 }
                 
-                trace("evaluate", "terminates")
+                trace("evaluate",  { "terminates" })
             }
         }
         
